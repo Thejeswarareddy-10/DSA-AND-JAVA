@@ -86,7 +86,7 @@ class BST {
     }
 }
 
-public class Main {
+public class JAVA_2nd_review {
     public static void main(String[] args) {
         BST bst = new BST();
         bst.insert("Alice", 10, 90, 85, 88, 92);
