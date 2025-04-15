@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Exam Result Management System</title>
+<style>
+body {
+  font-family: monospace;
+  background: #f7f7f7;
+  padding: 20px;
+}
+.code-block {
+  background: #f0f0f0;
+  border-left: 4px solid #4CAF50;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+input, select, button {
+  margin: 5px 0;
+  padding: 5px;
+  font-family: monospace;
+}
+.output-block {
+  background: #fff;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+  white-space: pre-wrap;
+}
+</style>
+</head>
+<body>
+
+<h2>Exam Result Management</h2>
+
+<div class="code-block">
+  <label>Action: </label>
+  <select id="action">
+    <option value="query">Query</option>
+    <option value="add">Add Student</option>
+    <option value="delete">Delete Student</option>
+    <option value="viewall">View All Students</option> <!-- New option -->
+  </select>
+  <button onclick="handleAction()">Submit</button>
+</div>
+
+<div class="code-block" id="inputFields"></div>
+<div class="output-block" id="output"></div>
+
+<script>
+const students = new Map();
+const priorityQueue = {
+  EEE: [], EOC: [], MFC: [], JAVA: []
+};
+
+function handleAction() {
+  const action = document.getElementById('action').value;
+  const inputDiv = document.getElementById('inputFields');
+  const output = document.getElementById('output');
+  output.textContent = '';
+  inputDiv.innerHTML = '';
+
+  if (action === 'query') {
+    inputDiv.innerHTML = `
+      <label>Enter student name, roll number, or subject:</label><br>
+      <input type="text" id="queryInput" />
+      <button onclick="runQuery()">Search</button>
+    `;
+  } else if (action === 'add') {
+    inputDiv.innerHTML = `
+      <label>Name: </label><input id="name" /><br>
+      <label>Roll No: </label><input id="roll" type="number" /><br>
+      EEE: <input id="EEE" type="number" />
+      EOC: <input id="EOC" type="number" />
+      MFC: <input id="MFC" type="number" />
+      JAVA: <input id="JAVA" type="number" /><br>
+      <button onclick="addStudent()">Add</button>
+    `;
+  } else if (action === 'delete') {
+    inputDiv.innerHTML = `
+      <label>Roll No to delete: </label><input id="delRoll" type="number" />
+      <button onclick="deleteStudent()">Delete</button>
+    `;
+  } else if (action === 'viewall') {
+    viewAllStudents();
+  }
+}
+
+function addStudent() {
+  const name = document.getElementById('name').value;
+  const roll = document.getElementById('roll').value;
+  const marks = {
+    EEE: parseInt(document.getElementById('EEE').value),
+    EOC: parseInt(document.getElementById('EOC').value),
+    MFC: parseInt(document.getElementById('MFC').value),
+    JAVA: parseInt(document.getElementById('JAVA').value)
+  };
+  students.set(roll, { name, roll, marks });
+  for (let subject in marks) {
+    priorityQueue[subject].push([marks[subject], name]);
+    priorityQueue[subject].sort((a, b) => b[0] - a[0]);
+  }
+  document.getElementById('output').textContent = 'Student added successfully.';
+}
+
+function deleteStudent() {
+  const roll = document.getElementById('delRoll').value;
+  const student = students.get(roll);
+  if (student) {
+    students.delete(roll);
+    for (let subject in priorityQueue) {
+      priorityQueue[subject] = priorityQueue[subject].filter(([_, name]) => name !== student.name);
+    }
+    document.getElementById('output').textContent = `Student with Roll No ${roll} deleted.`;
+  } else {
+    document.getElementById('output').textContent = 'Student not found.';
+  }
+}
+
+function runQuery() {
+  const input = document.getElementById('queryInput').value;
+  const output = document.getElementById('output');
+  if (students.has(input)) {
+    const student = students.get(input);
+    let text = `Results for ${student.name} (Roll No: ${student.roll}):\n`;
+    for (let s in student.marks) text += `${s}: ${student.marks[s]}\n`;
+    const total = Object.values(student.marks).reduce((a, b) => a + b, 0);
+    text += `Total Marks: ${total}`;
+    output.textContent = text;
+    return;
+  }
+  for (let [_, student] of students) {
+    if (student.name === input) {
+      let text = `Results for ${student.name} (Roll No: ${student.roll}):\n`;
+      for (let s in student.marks) text += `${s}: ${student.marks[s]}\n`;
+      const total = Object.values(student.marks).reduce((a, b) => a + b, 0);
+      text += `Total Marks: ${total}`;
+      output.textContent = text;
+      return;
+    }
+  }
+  if (priorityQueue[input]) {
+    const list = priorityQueue[input];
+    if (list.length === 0) {
+      output.textContent = `No students found for subject ${input}.`;
+      return;
+    }
+    output.textContent = `Students sorted by ${input} marks:\n` + list.map(([m, n]) => `${n}: ${m}`).join("\n");
+    return;
+  }
+  output.textContent = 'Invalid query.';
+}
+
+function viewAllStudents() {
+  const output = document.getElementById('output');
+  if (students.size === 0) {
+    output.textContent = "No students available.";
+    return;
+  }
+  let result = "All Students:\n";
+  for (let [roll, student] of students) {
+    result += `\nName: ${student.name}\nRoll No: ${roll}\n`;
+    for (let s in student.marks) {
+      result += `${s}: ${student.marks[s]}\n`;
+    }
+    const total = Object.values(student.marks).reduce((a, b) => a + b, 0);
+    result += `Total Marks: ${total}\n--------------------------`;
+  }
+  output.textContent = result;
+}
+</script>
+
+</body>
+</html>
